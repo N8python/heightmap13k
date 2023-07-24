@@ -528,7 +528,7 @@
             finalColor = envMap(ro, rd, lightDir);
         }
         if (water) {
-            finalColor = mix(finalColor, vec3(0.0, exp(-0.5 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0),0.0* pow(
+            finalColor = mix(finalColor, vec3(0.0, exp(-0.5 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0), 0.75 * pow(
                 max(dot(-depthRd, waterNormal), 0.0), 1.0
             ));
             finalColor *= max(dot(waterNormal, lightDir), 0.0);
