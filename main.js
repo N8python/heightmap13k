@@ -528,10 +528,10 @@
             finalColor = envMap(ro, rd, lightDir);
         }
         if (water) {
-            finalColor = mix(finalColor, vec3(0.0, exp(-0.5 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0), 0.75 * pow(
+            finalColor = mix(finalColor * vec3(0.0, exp(-0.35 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0), vec3(0.0, exp(-0.35 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0), 0.5 * pow(
                 max(dot(-depthRd, waterNormal), 0.0), 1.0
             ));
-            finalColor *= max(dot(waterNormal, lightDir), 0.0);
+            finalColor *= 0.75 + 0.25 * max(dot(waterNormal, lightDir), 0.0);
             if (t <= 0.0) {
                 float specular = pow(max(dot(rd, lightDir), 0.0), 64.0);
                 finalColor += vec3(1.0) * specular;
