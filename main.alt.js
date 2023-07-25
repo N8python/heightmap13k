@@ -14,9 +14,9 @@
  };
 
  var shaders = {
-     vertex: compileShader(gl, gl.VERTEX_SHADER, shaderSources.vertex),
-     fragmentMain: compileShader(gl, gl.FRAGMENT_SHADER, shaderSources.fragmentMain),
-     fragmentHeightMap: compileShader(gl, gl.FRAGMENT_SHADER, shaderSources.fragmentHeightMap),
+     vertex: compileShader(gl, 35633, shaderSources.vertex),
+     fragmentMain: compileShader(gl, 35632, shaderSources.fragmentMain),
+     fragmentHeightMap: compileShader(gl, 35632, shaderSources.fragmentHeightMap),
  };
 
  // Create the programs
@@ -28,7 +28,7 @@
  var positionBuffer = createBuffer(gl, [-1, -1, 1, -1, -1, 1, -1, 1, 1, -1, 1, 1, ]);
 
  // Create the textures
- var heightTexture = createTexture(gl, gl.RED, 2048, 2048, gl.UNSIGNED_BYTE, gl.R8);
+ var heightTexture = createTexture(gl, 6403, 2048, 2048, 5121, 33321);
 
  // Create the framebuffers
  var heightFBO = createFramebuffer(gl, heightTexture);
@@ -38,10 +38,10 @@
 
 
  renderToTexture(gl, programs.heightMap, heightFBO, positionBuffer, [2048, 2048]);
- gl.bindTexture(gl.TEXTURE_2D, heightTexture);
- gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
- gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
- gl.generateMipmap(gl.TEXTURE_2D);
+ gl.bindTexture(3553, heightTexture);
+ gl.texParameteri(3553, 10241, 9987);
+ gl.texParameteri(3553, 10240, 9729);
+ gl.generateMipmap(3553);
  const keys = {};
  document.addEventListener('keydown', (e) => {
      keys[e.key] = true;
@@ -111,8 +111,8 @@
      const resolution = [canvas.width, canvas.height];
      gl.uniform2fv(gl.getUniformLocation(programs.main, 'resolution'), resolution);
 
-     gl.activeTexture(gl.TEXTURE0);
-     gl.bindTexture(gl.TEXTURE_2D, heightTexture);
+     gl.activeTexture(33984);
+     gl.bindTexture(3553, heightTexture);
 
      gl.uniform1f(timeLocation, performance.now() / 1000);
 
@@ -130,7 +130,7 @@
      var shader = gl.createShader(type);
      gl.shaderSource(shader, source);
      gl.compileShader(shader);
-     if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+     if (!gl.getShaderParameter(shader, 35713)) {
          console.error('Shader failed to compile: ' + gl.getShaderInfoLog(shader));
      }
      return shader;
@@ -141,7 +141,7 @@
      gl.attachShader(program, vertexShader);
      gl.attachShader(program, fragmentShader);
      gl.linkProgram(program);
-     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+     if (!gl.getProgramParameter(program, 35714)) {
          console.error('Program failed to link: ' + gl.getProgramInfoLog(program));
      }
      return program;
@@ -149,48 +149,48 @@
 
  function createBuffer(gl, data) {
      var buffer = gl.createBuffer();
-     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.STATIC_DRAW);
+     gl.bindBuffer(34962, buffer);
+     gl.bufferData(34962, new Float32Array(data), 35044);
      return buffer;
  }
 
  function createTexture(gl, format, width, height, type, internalFormat = format) {
      var texture = gl.createTexture();
-     gl.bindTexture(gl.TEXTURE_2D, texture);
-     if (gl.getError() != gl.NO_ERROR) {
+     gl.bindTexture(3553, texture);
+     if (gl.getError() != 0) {
          console.error("Error binding texture");
      }
 
-     gl.texImage2D(gl.TEXTURE_2D, 0, internalFormat, width, height, 0, format, type, null);
-     if (gl.getError() != gl.NO_ERROR) {
+     gl.texImage2D(3553, 0, internalFormat, width, height, 0, format, type, null);
+     if (gl.getError() != 0) {
          console.error("Error setting texture image");
      }
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR_MIPMAP_LINEAR);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+     gl.texParameteri(3553, 10241, 9987);
+     gl.texParameteri(3553, 10240, 9729);
 
      // Repeat
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT);
+     gl.texParameteri(3553, 10242, 10497);
+     gl.texParameteri(3553, 10243, 10497);
 
      return texture;
  }
 
  function createFramebuffer(gl, texture) {
      var fbo = gl.createFramebuffer();
-     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
-     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR)
+     gl.bindFramebuffer(36160, fbo);
+     gl.framebufferTexture2D(36160, 36064, 3553, texture, 0);
+     gl.texParameteri(3553, 10241, 9729)
      return fbo;
  }
 
  function renderToTexture(gl, program, fbo, positionBuffer, size) {
-     gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+     gl.bindFramebuffer(36160, fbo);
      gl.viewport(0, 0, size[0], size[1]);
      renderWithProgram(gl, program, positionBuffer);
  }
 
  function renderToScreen(gl, program, positionBuffer) {
-     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+     gl.bindFramebuffer(36160, null);
      gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
      renderWithProgram(gl, program, positionBuffer);
  }
@@ -198,7 +198,7 @@
  function renderWithProgram(gl, program, positionBuffer) {
      gl.useProgram(program);
      gl.enableVertexAttribArray(0);
-     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0);
-     gl.drawArrays(gl.TRIANGLES, 0, 6);
+     gl.bindBuffer(34962, positionBuffer);
+     gl.vertexAttribPointer(0, 2, 5126, false, 0, 0);
+     gl.drawArrays(4, 0, 6);
  }

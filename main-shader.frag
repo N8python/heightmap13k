@@ -1,46 +1,12 @@
 #version 300 es
      precision highp float;
-
-     // Define shader model 3.0
      layout(location = 0) out vec4 pc_FragColor;
-     uniform sampler2D colorTexture;
     uniform sampler2D heightTexture;
     uniform vec3 cameraPos;
     uniform vec3 cameraDir;
+    uniform vec2 resolution;
     uniform highp float time;
    in vec2 vPosition;
-   
-   const float sphereRadius = 0.5;
-   const vec3 skyColor = vec3(0.5, 0.7, 1.0);
-   const vec3 groundColor = vec3(0.4, 0.2, 0.1);
-   const vec3 sphereColor = vec3(1.0, 0.3, 0.1);
-   const float ambient = 0.1;
-   
-   float scene(vec3 pos) {
-       float sphereDist = length(pos - vec3(0.0, sphereRadius + 0.01, 2.0)) - sphereRadius;
-       float planeDist = pos.y;
-       return min(sphereDist, planeDist);
-   }
-   
-   float rayMarch(vec3 ro, vec3 rd) {
-       float t = 0.0;
-       for(int i = 0; i < 2048; i++) {
-           float res = scene(ro + rd * t);
-           if(res < 0.001 || t > 1000.0) return t;
-           t += res;
-       }
-       return -1.0;
-   }
-   
-   vec3 getNormal(vec3 pos) {
-       vec2 e = vec2(0.001, 0.0);
-       return normalize(vec3(
-           scene(pos + e.xyy) - scene(pos - e.xyy),
-           scene(pos + e.yxy) - scene(pos - e.yxy),
-           scene(pos + e.yyx) - scene(pos - e.yyx)
-       ));
-   }
-   
    mat4 makeViewMatrix(vec3 eye, vec3 center, vec3 up) {
        vec3 f = normalize(center - eye);
        vec3 s = normalize(cross(f, up));
@@ -57,90 +23,6 @@
        float z = size.y / tan(radians(fieldOfView) / 2.0);
        return normalize(vec3(xy, -z));
    }
-   vec4 permute(vec4 x){return mod(((x*34.0)+1.0)*x, 289.0);}
-   vec4 taylorInvSqrt(vec4 r){return 1.79284291400159 - 0.85373472095314 * r;}
-   
-   float snoise(vec3 v){ 
-     const vec2  C = vec2(1.0/6.0, 1.0/3.0) ;
-     const vec4  D = vec4(0.0, 0.5, 1.0, 2.0);
-   
-   // First corner
-     vec3 i  = floor(v + dot(v, C.yyy) );
-     vec3 x0 =   v - i + dot(i, C.xxx) ;
-   
-   // Other corners
-     vec3 g = step(x0.yzx, x0.xyz);
-     vec3 l = 1.0 - g;
-     vec3 i1 = min( g.xyz, l.zxy );
-     vec3 i2 = max( g.xyz, l.zxy );
-   
-     //  x0 = x0 - 0. + 0.0 * C 
-     vec3 x1 = x0 - i1 + 1.0 * C.xxx;
-     vec3 x2 = x0 - i2 + 2.0 * C.xxx;
-     vec3 x3 = x0 - 1. + 3.0 * C.xxx;
-   
-   // Permutations
-     i = mod(i, 289.0 ); 
-     vec4 p = permute( permute( permute( 
-                i.z + vec4(0.0, i1.z, i2.z, 1.0 ))
-              + i.y + vec4(0.0, i1.y, i2.y, 1.0 )) 
-              + i.x + vec4(0.0, i1.x, i2.x, 1.0 ));
-   
-   // Gradients
-   // ( N*N points uniformly over a square, mapped onto an octahedron.)
-     float n_ = 1.0/7.0; // N=7
-     vec3  ns = n_ * D.wyz - D.xzx;
-   
-     vec4 j = p - 49.0 * floor(p * ns.z *ns.z);  //  mod(p,N*N)
-   
-     vec4 x_ = floor(j * ns.z);
-     vec4 y_ = floor(j - 7.0 * x_ );    // mod(j,N)
-   
-     vec4 x = x_ *ns.x + ns.yyyy;
-     vec4 y = y_ *ns.x + ns.yyyy;
-     vec4 h = 1.0 - abs(x) - abs(y);
-   
-     vec4 b0 = vec4( x.xy, y.xy );
-     vec4 b1 = vec4( x.zw, y.zw );
-   
-     vec4 s0 = floor(b0)*2.0 + 1.0;
-     vec4 s1 = floor(b1)*2.0 + 1.0;
-     vec4 sh = -step(h, vec4(0.0));
-   
-     vec4 a0 = b0.xzyw + s0.xzyw*sh.xxyy ;
-     vec4 a1 = b1.xzyw + s1.xzyw*sh.zzww ;
-   
-     vec3 p0 = vec3(a0.xy,h.x);
-     vec3 p1 = vec3(a0.zw,h.y);
-     vec3 p2 = vec3(a1.xy,h.z);
-     vec3 p3 = vec3(a1.zw,h.w);
-   
-   //Normalise gradients
-     vec4 norm = taylorInvSqrt(vec4(dot(p0,p0), dot(p1,p1), dot(p2, p2), dot(p3,p3)));
-     p0 *= norm.x;
-     p1 *= norm.y;
-     p2 *= norm.z;
-     p3 *= norm.w;
-   
-   // Mix final noise value
-     vec4 m = max(0.6 - vec4(dot(x0,x0), dot(x1,x1), dot(x2,x2), dot(x3,x3)), 0.0);
-     m = m * m;
-     return 42.0 * dot( m*m, vec4( dot(p0,x0), dot(p1,x1), 
-                                   dot(p2,x2), dot(p3,x3) ) );
-   }
-   #define NUM_OCTAVES 8
-
-    float fbm(vec3 x) {
-        float v = 0.0;
-        float a = 0.5;
-        vec3 shift = vec3(100);
-        for (int i = 0; i < NUM_OCTAVES; ++i) {
-            v += a * snoise(x);
-            x = x * 2.0 + shift;
-            a *= 0.75;
-        }
-        return v;
-    }
    float traceHeightMap(vec3 ro, vec3 rd, float heightMagnitude, float minT) {
          vec3 samplePos = ro;
             bool hit = false;
@@ -164,13 +46,12 @@
                     break;
                 }
 
-                dt = max(0.4 * abs(p.y - h), 0.001);//max(clamp(0.01 * abs(p.y - h), 0.01, 0.1) * t, 0.01);
+                dt = max(0.4 * abs(p.y - h), 0.001);
                 lh = h;
                 ly = p.y;
                 t += dt;
             }
            
-            // Binary search to clean up
             if (hit) {
                 for(int i = 0; i < 8; i++) {
                     dt *= 0.5;
@@ -229,8 +110,8 @@
         float a = 0.1;
         float b = 0.15;
         float sunAmount = max( dot( rd, lightDir ), 0.0 );
-        vec3 fogColor =  mix( vec3(0.5,0.6,0.7), // bluish
-        vec3(1.0,0.9,0.7), // yellowish
+        vec3 fogColor =  mix( vec3(0.5,0.6,0.7),
+        vec3(1.0,0.9,0.7),
         clamp(pow(sunAmount,8.0), 0.0, 1.0) );
         float fogAmount = clamp((a/b) * exp(-ro.y*b) * (1.0-exp( -t*fd.y*b ))/fd.y, 0.0, 1.0);
         vec4 fog = vec4( fogColor, fogAmount );
@@ -279,10 +160,6 @@
         } else {
             integratedColor = vec3(1.0);
         }
-        float sunAmount = max( dot( rd, lightDir ), 0.0 );
-        vec3 fogColor =  mix( vec3(0.5,0.6,0.7), // bluish
-        vec3(1.0,0.9,0.7), // yellowish
-        clamp(pow(sunAmount,8.0), 0.0, 1.0) );
         incidentLight = clamp(incidentLight, 0.0, 1.0);
         float interpWeight = clamp(1.0 - exp(-totalIntensity * 0.5), 0.0, 1.0);
         if (justIntensity) {
@@ -331,8 +208,8 @@
         float a = 0.1;
         float b = 0.15;
         float sunAmount = max( dot( rd, lightDir ), 0.0 );
-        vec3 fogColor =  mix( vec3(0.5,0.6,0.7), // bluish
-        vec3(1.0,0.9,0.7), // yellowish
+        vec3 fogColor =  mix( vec3(0.5,0.6,0.7),
+        vec3(1.0,0.9,0.7), 
         clamp(pow(sunAmount,8.0), 0.0, 1.0) );
         if (justFog) {
             fogColor = applyClouds(fogColor, ro, rd, t, lightDir, false);
@@ -356,11 +233,29 @@
         return col;
 
     }
-        
+    highp float fetchTexture(sampler2D texture, vec2 uv, vec2 offset, float lod) {
+        return textureLod(texture, uv + offset, lod).r;
+    }
+    
+    vec3 computeNormal(float px, float nx, float pz, float nz, float heightMagnitude) {
+        return normalize(
+            vec3(
+                -heightMagnitude * (px - nx),
+                2.0 * 0.0005,
+                -heightMagnitude * (pz - nz)
+            )
+        );
+    }
+    vec4 fetchTextureVec4(sampler2D texture, vec2 uv, float div, float lod) {
+        float px = fetchTexture(texture, uv, vec2(1.0 / div, 0.0), lod);
+        float nx = fetchTexture(texture, uv, vec2(-1.0 / div, 0.0), lod);
+        float pz = fetchTexture(texture, uv, vec2(0.0, 1.0 / div), lod);
+        float nz = fetchTexture(texture, uv, vec2(0.0, -1.0 / div), lod);
+        return vec4(px, nx, pz, nz);
+    }
    void main() {
        vec3 lightDir = normalize(vec3(2.0, 1.0, 2.0));
-       vec2 size = vec2(2048.0);
-       vec3 viewDir = rayDirection(75.0, size, gl_FragCoord.xy);
+       vec3 viewDir = rayDirection(75.0, resolution, gl_FragCoord.xy);
        float heightMagnitude = 25.0;
        vec3 eye = cameraPos;
        vec3 target = eye + cameraDir;
@@ -369,7 +264,6 @@
        vec3 rd = (makeViewMatrix(eye, target, up) * vec4(viewDir, 1.0)).xyz;
        if (rd.y == 0.0) rd.y = 0.0001;
         vec3 samplePos = ro;
-
 
         float t = traceHeightMap(ro, rd, heightMagnitude, 1.0);
 
@@ -407,42 +301,21 @@
         if (t > 0.0) {
             samplePos = ro + rd * t;
             vec2 finalUv = (samplePos.xz * 0.5 + 0.5) * 0.01  +vec2(0.5);
-           // finalUv = floor(finalUv * 2048.0) / 2048.0;
-            highp float px = textureLod(heightTexture, finalUv + vec2(1.0 / 2048.0, 0.0), 0.0).r;
-            highp float nx = textureLod(heightTexture, finalUv - vec2(1.0 / 2048.0, 0.0), 0.0).r;
-            highp float pz = textureLod(heightTexture, finalUv + vec2(0.0, 1.0 / 2048.0), 0.0).r;
-            highp float nz = textureLod(heightTexture, finalUv - vec2(0.0, 1.0 / 2048.0), 0.0).r;
-            if (px == nx && pz == nz) {
-                px = textureLod(heightTexture, finalUv + vec2(1.0 / 1024.0, 0.0), 1.0).r;
-                nx = textureLod(heightTexture, finalUv - vec2(1.0 / 1024.0, 0.0), 1.0).r;
-                pz = textureLod(heightTexture, finalUv + vec2(0.0, 1.0 / 1024.0), 1.0).r;
-                nz = textureLod(heightTexture, finalUv - vec2(0.0, 1.0/ 1024.0), 1.0).r;
+            float lod = 0.0;
+            float div = 2048.0;
+            vec4 textures;
+            
+            for(int i = 0; i < 3; i++) {
+                textures = fetchTextureVec4(heightTexture, finalUv, div, lod);
+                if (textures.x != textures.y || textures.z != textures.w) {
+                    break;
+                }
+                lod += 1.0;
+                div /= 2.0;
             }
-            if (px == nx && pz == nz) {
-                px = textureLod(heightTexture, finalUv + vec2(1.0 / 512.0, 0.0), 2.0).r;
-                nx = textureLod(heightTexture, finalUv - vec2(1.0 / 512.0, 0.0), 2.0).r;
-                pz = textureLod(heightTexture, finalUv + vec2(0.0, 1.0 / 512.0), 2.0).r;
-                nz = textureLod(heightTexture, finalUv - vec2(0.0, 1.0/ 512.0), 2.0).r;
-            }
-            vec3 normal = normalize(
-                vec3(
-                    -heightMagnitude * (px - nx),
-                    2.0 * 0.0005,
-                   - heightMagnitude * (pz - nz)
-                )
-            );
-            px = textureLod(heightTexture, finalUv + vec2(1.0 / 256.0, 0.0), 3.0).r;
-            nx = textureLod(heightTexture, finalUv - vec2(1.0 / 256.0, 0.0), 3.0).r;
-            pz = textureLod(heightTexture, finalUv + vec2(0.0, 1.0 / 256.0), 3.0).r;
-            nz = textureLod(heightTexture, finalUv - vec2(0.0, 1.0 / 256.0), 3.0).r;
-            vec3 lowPassNormal = normalize(
-                vec3(
-                    -heightMagnitude * (px - nx),
-                    2.0 * 0.0005,
-                     - heightMagnitude * (pz - nz)
-                )
-            );
-    
+            vec3 normal = computeNormal(textures.x, textures.y, textures.z, textures.w, heightMagnitude);
+            textures = fetchTextureVec4(heightTexture, finalUv, 256.0, 3.0);
+            vec3 lowPassNormal = computeNormal(textures.x, textures.y, textures.z, textures.w, heightMagnitude);
             float height = samplePos.y / heightMagnitude;
             float xSample = texture(heightTexture, 0.1 * samplePos.yz).r * 2.0 - 1.0;
             float ySample = texture(heightTexture, 0.1 * samplePos.zx).r * 2.0 - 1.0;
@@ -452,11 +325,7 @@
             weights = weights / (weights.x + weights.y + weights.z);
 
             float fbmJitter = 0.1 * (weights.x * xSample + weights.y * ySample + weights.z * zSample);
-            vec3 color = mix(vec3(0.0, 0.75, 0.0),vec3(0.85, 0.5, 0.0), /*smoothstep(
-                0.4,
-                0.5,
-                height + fbmJitter
-            )*/smoothstep(0.0, 1.0, clamp(1.0 - pow(lowPassNormal.y, 0.15) + fbmJitter, 0.0, 1.0)));
+            vec3 color = mix(vec3(0.0, 0.75, 0.0),vec3(0.85, 0.5, 0.0), smoothstep(0.0, 1.0, clamp(1.0 - pow(lowPassNormal.y, 0.15) + fbmJitter, 0.0, 1.0)));
 
             color = mix(vec3(0.95, 0.85, 0.7), color, smoothstep(
                 0.4,
@@ -504,23 +373,19 @@
             }
             finalColor = (color * ambient * sqrt(finalAo) + color * dir * finalAo + (bounce * color * finalAo) / 3.14159) * (0.25 + 0.75 * cloudShadow);
             finalColor = applyFog(finalColor, t, ro, rd, lightDir, false);
-
-
         } else {
             finalColor = envMap(ro, rd, lightDir);
         }
         if (water) {
-            finalColor = mix(finalColor, vec3(0.0, exp(-0.5 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0),0.0* pow(
-                max(dot(-depthRd, waterNormal), 0.0), 1.0
-            ));
-            finalColor *= max(dot(waterNormal, lightDir), 0.0);
+            finalColor = mix(finalColor, 0.8 * vec3(0.0, 0.9 * exp(-0.35 * clamp(distance(depthPos, ro),0.0, 1.0)), 1.0), max(dot(-depthRd, vec3(0.0, 1.0, 0.0)), 0.0));
+            finalColor *= 0.75 + 0.25 * max(dot(waterNormal, lightDir), 0.0);
             if (t <= 0.0) {
                 float specular = pow(max(dot(rd, lightDir), 0.0), 64.0);
                 finalColor += vec3(1.0) * specular;
             }
             float weight = (1.0 / (pow(1.0 + (10.0 - depthPos.y), 15.0))) * min(20.0 * (10.0 - depthPos.y), 1.0);
             if (weight > 1.0 / 255.0) {
-            finalColor = mix(finalColor, vec3(0.75), (0.5 + 0.5 * sin((20.0 + 0.1 * fbm(vec3(0.01 * ro.xz, 0.001 * time))) * depthPos.y - 5.0 * time + 20.0 * fbm(vec3(0.01 * ro.xz, 0.001 * time))))*weight);
+            finalColor = mix(finalColor, vec3(0.75), (0.5 + 0.5 * sin((20.0 + 0.1 * (2.0 * textureLod(heightTexture, 0.01 * ro.xz - 0.001 * time, 0.0).r - 1.0)) * depthPos.y - 5.0 * time + 20.0 * (2.0 * textureLod(heightTexture, 0.01 * ro.zx + 0.001 * time, 0.0).r - 1.0)))*weight);
             }
 
             finalColor = applyFog(finalColor, waterIntersection, depthRo, depthRd, lightDir, false);

@@ -1,15 +1,20 @@
 {
-  "name": "js13k",
-  "version": "1.0.0",
-  "description": "",
-  "main": "main.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "glsl-minifier": "^0.0.13",
-    "spglsl": "^0.2.7"
-  }
+    "name": "js13k",
+    "type": "module",
+    "version": "1.0.0",
+    "description": "",
+    "main": "main.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "build": "node preprocess.js && mono shader_minifier.exe main-shader.frag --format text -o main-shader-min.frag --preserve-externals && mono shader_minifier.exe height-shader.frag --format text -o height-shader-min.frag --preserve-externals && terser main.alt.js --compress --mangle --module -o 'main.min.js' && node postprocess.mjs"
+    },
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "glsl-minifier": "^0.0.13",
+        "gulp": "^4.0.2",
+        "gulp-glsl": "^1.2.4",
+        "spglsl": "^0.2.7",
+        "webgl-constants": "^1.1.1"
+    }
 }
